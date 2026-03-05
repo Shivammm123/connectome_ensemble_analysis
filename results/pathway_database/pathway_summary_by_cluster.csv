@@ -1,0 +1,6 @@
+in_cluster,n_pathways,n_dns,n_mns,muscle_type,pathway_strength
+1,14557,473,40,steering,1025534
+2,39586,862,47,steering,2688900
+3,27873,681,48,steering,1805974
+4,30932,499,50,power,2033965
+5,24698,555,48,steering,2680244

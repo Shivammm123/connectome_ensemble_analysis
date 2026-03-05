@@ -1,0 +1,10 @@
+{
+  "total_pathways": 137646,
+  "unique_dns": 1053,
+  "unique_ins": 1660,
+  "unique_mns": 50,
+  "unique_muscles": 18,
+  "total_pathway_strength": 10234617.0,
+  "mean_pathway_strength": 74.35462708687503,
+  "clusters_involved": 5
+}
