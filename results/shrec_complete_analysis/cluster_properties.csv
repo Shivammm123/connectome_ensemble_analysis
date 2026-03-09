@@ -1,0 +1,6 @@
+cluster,n_interneurons,total_synapses,avg_synapses_per_in,function,top_targets
+1,121,21199.0,175.19834710743802,power_control,"DLM1 (13492), DLM5 (4052), DVM1A (2166)"
+2,122,5802.0,47.557377049180324,steering_control,"b2 (2798), b1 (2735), iii4 (135)"
+3,79,5289.0,66.9493670886076,power_control,"DVM1A (3167), DVM3A (1209), DVM2A (856)"
+4,59,2131.0,36.11864406779661,steering_control,"iii3 (2094), b1 (19), iii1 (18)"
+5,391,29650.0,75.83120204603581,steering_control,"iii4 (3901), hg4 (3890), hg3 (3108)"
