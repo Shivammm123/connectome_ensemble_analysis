@@ -324,9 +324,10 @@ def main():
     # Load data
     loader = ConnectomeDataLoader('config.yaml')
     connections, neurons, name_mapping = loader.load_all_data(verbose=False)
-    
+    min_synapses = loader.config['analysis']['min_synapses']
+
     # Filter connections
-    filtered_conn = loader.filter_connections(min_synapses=3, verbose=False)
+    filtered_conn = loader.filter_connections(min_synapses=min_synapses, verbose=False)
     
     # Load previous results
     print("Loading previous results...")
@@ -362,9 +363,9 @@ def main():
         filtered_conn,
         dn_ids,
         premotor_in_ids,
-        min_synapses=3
+        min_synapses=min_synapses
     )
-    
+
     if len(dn_in_conn) == 0:
         print("\n❌ No DN→IN connections found!")
         print("DNs might not directly connect to these premotor INs.")

@@ -335,7 +335,8 @@ def main():
     # Load data
     loader = ConnectomeDataLoader('config.yaml')
     connections, neurons, name_mapping = loader.load_all_data(verbose=False)
-    filtered_conn = loader.filter_connections(min_synapses=3, verbose=False)
+    min_synapses = loader.config['analysis']['min_synapses']
+    filtered_conn = loader.filter_connections(min_synapses=min_synapses, verbose=False)
     
     # Load previous results
     print("Loading data...")
@@ -366,7 +367,7 @@ def main():
         filtered_conn,
         dn_ids,
         wing_mn_ids,
-        min_synapses=3
+        min_synapses=min_synapses
     )
     
     # Step 2: Get INDIRECT DN→IN connections (from previous analysis)

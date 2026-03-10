@@ -251,7 +251,7 @@ def main():
         output_dir / 'connectivity_flow_sankey.html',
         top_similar=5,
         top_targets=15,
-        min_synapses=5
+        min_synapses=min_syn
     )
     
     print("\n" + "="*70)

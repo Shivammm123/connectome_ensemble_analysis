@@ -21,7 +21,7 @@ from utils.data_loader import ConnectomeDataLoader
 
 
 def create_dn_in_heatmap(dn_in_conn, cluster_assignments, loader,
-                         top_n_dns=30, top_n_ins=50, output_dir=None):
+                         top_n_dns=15, top_n_ins=20, output_dir=None):
     """
     Create DN→IN connectivity heatmap with neuron names.
     
@@ -477,11 +477,11 @@ def main():
     
     # Heatmap 1: Top DNs × Top INs
     create_dn_in_heatmap(
-        dn_in_conn, 
+        dn_in_conn,
         cluster_assignments,
         loader,
-        top_n_dns=30,
-        top_n_ins=50,
+        top_n_dns=15,
+        top_n_ins=25,
         output_dir=output_dir
     )
     

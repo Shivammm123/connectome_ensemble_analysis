@@ -1,6 +1,6 @@
 cluster_id,n_interneurons,primary_targets,total_connectivity,functional_type
-1,335,"b2, b1, iii4",17446.0,steering_control
-2,539,"iii4, hg4, hg1",32973.0,steering_control
-3,460,"i2, i1, b3",23911.0,steering_control
-4,370,"DLM1, DLM5, DVM1A",49333.0,power_control
-5,376,"ps1, iii1, iii3",21608.0,steering_control
+1,224,"b2, b1, iii4",11588.0,steering_control
+2,181,"DLM1, DLM5, DVM1A",27965.0,power_control
+3,139,"ps1, iii4, DLM1",9472.0,steering_control
+4,299,"iii4, hg4, hg1",23310.0,steering_control
+5,412,"i2, i1, iii1",24944.0,steering_control

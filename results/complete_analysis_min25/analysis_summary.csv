@@ -1,0 +1,2 @@
+min_synapses,n_premotor_ins,n_in_mn_connections,total_in_mn_synapses,n_clusters,silhouette_score,calinski_harabasz,n_hubs,hub_percentage,n_dns,n_dn_in_connections,total_dn_in_synapses,n_complete_pathways
+25,530,1156,49863,5,0.49653629244020575,46.81286500193724,530,100.0,88,165,6460,402

@@ -18,7 +18,7 @@ multi_query:
 
 # Analysis parameters
 analysis:
-  min_synapses: 3
+  min_synapses: 10
   top_n_similar: 20
   similarity_threshold: 0.0
   normalization: none

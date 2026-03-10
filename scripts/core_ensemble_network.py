@@ -24,7 +24,8 @@ def extract_core_ensemble(
     loader: ConnectomeDataLoader,
     min_queries_shared: int = 2,
     min_similarity: float = 0.3,
-    top_n_per_query: int = 20
+    top_n_per_query: int = 20,
+    min_synapses: int = 3
 ):
     """
     Extract core ensemble members.
@@ -35,7 +36,7 @@ def extract_core_ensemble(
     print("\nExtracting core ensemble members...")
     print("-"*70)
 
-    filtered_conn = loader.filter_connections(min_synapses=3, verbose=False)
+    filtered_conn = loader.filter_connections(min_synapses=min_synapses, verbose=False)
 
     # Find similar neurons for each query
     all_similar = {}
@@ -97,7 +98,8 @@ def create_core_ensemble_network(
     query_neurons: list,
     core_members: list,
     loader: ConnectomeDataLoader,
-    output_file: Path
+    output_file: Path,
+    min_synapses: int = 3
 ):
     """
     Create focused network of core ensemble.
@@ -106,7 +108,7 @@ def create_core_ensemble_network(
     print("\nCreating core ensemble network...")
     print("-"*70)
 
-    filtered_conn = loader.filter_connections(min_synapses=5, verbose=False)
+    filtered_conn = loader.filter_connections(min_synapses=min_synapses, verbose=False)
 
     # Create graph
     G = nx.DiGraph()
@@ -132,7 +134,7 @@ def create_core_ensemble_network(
 
     for _, row in filtered_conn.iterrows():
         if row['source'] in all_neurons and row['target'] in all_neurons:
-            if row['weight'] >= 5:
+            if row['weight'] >= min_synapses:
                 G.add_edge(row['source'], row['target'], weight=row['weight'])
 
     print(f"  Network: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
@@ -281,6 +283,7 @@ def main():
     # Load data
     loader = ConnectomeDataLoader('config.yaml')
     loader.load_all_data(verbose=False)
+    min_synapses = loader.config['analysis']['min_synapses']
     print("✓ Data loaded")
 
     # Get query neurons from paper_style results
@@ -331,7 +334,8 @@ def main():
         loader,
         min_queries_shared=2,
         min_similarity=0.15,
-        top_n_per_query=50
+        top_n_per_query=50,
+        min_synapses=min_synapses
     )
 
     if not core_members:
@@ -356,7 +360,8 @@ def main():
         query_ids,
         core_members,
         loader,
-        output_dir / 'core_ensemble_network.png'
+        output_dir / 'core_ensemble_network.png',
+        min_synapses=min_synapses
     )
 
     # Summary

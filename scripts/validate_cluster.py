@@ -164,7 +164,8 @@ def main():
     # Load data
     loader = ConnectomeDataLoader('config.yaml')
     connections, neurons, name_mapping = loader.load_all_data(verbose=False)
-    filtered_conn = loader.filter_connections(min_synapses=3, verbose=False)
+    min_synapses = loader.config['analysis']['min_synapses']
+    filtered_conn = loader.filter_connections(min_synapses=min_synapses, verbose=False)
     
     # Load premotor INs and connections
     premotor_ins = pd.read_csv('results/interneuron_clusters/premotor_interneurons_clustered.csv')

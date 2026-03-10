@@ -401,7 +401,8 @@ def main():
     # Load data
     loader = ConnectomeDataLoader('config.yaml')
     connections, neurons, name_mapping = loader.load_all_data(verbose=False)
-    
+    min_synapses = loader.config['analysis']['min_synapses']
+
     # Load previous results
     print("Loading previous results...")
     print("-"*70 + "\n")
@@ -422,14 +423,14 @@ def main():
     print(f"  ✓ Total wing MNs: {len(all_mn_ids)}\n")
     
     # Filter connections
-    filtered_conn = loader.filter_connections(min_synapses=3, verbose=False)
-    
+    filtered_conn = loader.filter_connections(min_synapses=min_synapses, verbose=False)
+
     # Step 1: Find premotor INs
     premotor_ins, premotor_conn = find_premotor_interneurons(
         filtered_conn,
         all_mn_ids,
         vnc_ins,
-        min_synapses=3
+        min_synapses=min_synapses
     )
     
     if len(premotor_ins) == 0:
