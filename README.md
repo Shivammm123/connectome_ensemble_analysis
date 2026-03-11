@@ -588,27 +588,12 @@ Nature. https://doi.org/10.1038/s41586-024-07389-x
 
 ### Methodology References
 
-**Connectivity Analysis:**
-```
-Liessem et al. (2025). Descending control and regulation of 
-spontaneous flight turns in Drosophila melanogaster.
-Current Biology. https://doi.org/10.1016/j.cub.2024.11.002
-```
-
 **Premotor Circuits:**
 ```
 Cheong et al. (2024). Transforming descending input into behavior: 
 The organization of premotor circuits in the Drosophila Male Adult 
 Nerve Cord connectome. eLife. https://doi.org/10.7554/eLife.96084
 ```
-
-**Motor Organization:**
-```
-Azevedo et al. (2023). Synaptic architecture of leg and wing premotor 
-control networks in Drosophila. Nature. 
-https://doi.org/10.1038/s41586-024-07600-z
-```
-
 ---
 
 ## Troubleshooting
