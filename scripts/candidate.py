@@ -152,10 +152,9 @@ def score_dn_input(
         max_dns = scores_df['n_dn_inputs'].max()
         max_strength = scores_df['dn_input_strength'].max()
         
-        scores_df['dn_score'] = (
-            50 * scores_df['n_dn_inputs'] / max_dns if max_dns > 0 else 0 +
-            50 * scores_df['dn_input_strength'] / max_strength if max_strength > 0 else 0
-        )
+        norm_dns = scores_df['n_dn_inputs'] / max_dns if max_dns > 0 else 0
+        norm_strength = scores_df['dn_input_strength'] / max_strength if max_strength > 0 else 0
+        scores_df['dn_score'] = 50 * norm_dns + 50 * norm_strength
     else:
         scores_df['dn_score'] = 0
     

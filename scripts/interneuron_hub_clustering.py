@@ -45,11 +45,10 @@ def find_premotor_interneurons(
     # Get VNC IN IDs
     vnc_in_ids = set(vnc_interneurons['Root ID'].unique())
     
-    # Find connections: IN → MN
+    # Find connections: IN → MN (synapse threshold already applied upstream)
     premotor_conn = connections[
         (connections['source'].isin(vnc_in_ids)) &
-        (connections['target'].isin(motor_neuron_ids)) &
-        (connections['weight'] >= min_synapses)
+        (connections['target'].isin(motor_neuron_ids))
     ].copy()
     
     # Get unique premotor INs

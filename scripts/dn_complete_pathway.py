@@ -32,11 +32,10 @@ def find_direct_dn_mn_connections(
     print("Finding DIRECT DN → MN connections...")
     print("-"*70)
     
-    # Filter: DN → MN connections
+    # Filter: DN → MN connections (synapse threshold already applied upstream)
     direct_conn = connections[
         (connections['source'].isin(dn_ids)) &
-        (connections['target'].isin(wing_mn_ids)) &
-        (connections['weight'] >= min_synapses)
+        (connections['target'].isin(wing_mn_ids))
     ].copy()
     
     # Get unique DNs using direct pathway
@@ -375,8 +374,9 @@ def main():
     
     if indirect_file.exists():
         indirect_conn = pd.read_csv(indirect_file)
+        indirect_conn = indirect_conn[indirect_conn['weight'] >= min_synapses].copy()
         indirect_dns = indirect_conn['source'].unique()
-        print(f"\n  ✓ Loaded indirect DN→IN connections: {len(indirect_conn):,}")
+        print(f"\n  ✓ Loaded indirect DN→IN connections: {len(indirect_conn):,} (min={min_synapses} synapses)")
         print(f"    DNs using indirect pathway: {len(indirect_dns)}")
     else:
         print("\n  ⚠ No indirect pathway data found!")

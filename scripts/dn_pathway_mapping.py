@@ -31,27 +31,29 @@ def find_dn_to_in_connections(
 ):
     """
     Find connections from DNs to premotor INs.
+    Expects `connections` to already be filtered by min_synapses via
+    loader.filter_connections() — the min_synapses arg is kept only for
+    the print statement so logs remain informative.
     """
-    
+
     print("Finding DN → IN connections...")
     print("-"*70)
-    
-    # Filter: DN → IN connections
+
+    # Filter: DN → IN connections (synapse threshold already applied upstream)
     dn_in_conn = connections[
         (connections['source'].isin(dn_ids)) &
-        (connections['target'].isin(premotor_in_ids)) &
-        (connections['weight'] >= min_synapses)
+        (connections['target'].isin(premotor_in_ids))
     ].copy()
-    
+
     # Get unique DNs that connect
     connected_dns = dn_in_conn['source'].unique()
-    
+
     print(f"  Total DNs: {len(dn_ids):,}")
     print(f"  Premotor INs: {len(premotor_in_ids):,}")
     print(f"  DNs connecting to premotor INs: {len(connected_dns)}")
     print(f"  DN→IN connections: {len(dn_in_conn):,}")
     print(f"  (min {min_synapses} synapses)")
-    
+
     return dn_in_conn, connected_dns
 
 
@@ -278,23 +280,30 @@ def create_dn_pathway_visualizations(
     # Plot heatmap
     im = ax.imshow(dn_cluster_matrix, aspect='auto', cmap='hot', interpolation='nearest')
     
-    ax.set_xticks(range(5))
-    ax.set_xticklabels([f'C{i+1}' for i in range(5)], fontsize=10)
+    # Build informative x-axis labels from cluster_info
+    x_labels = []
+    for _, cl in cluster_info.sort_values('cluster_id').iterrows():
+        func  = cl['functional_type']
+        ftype = 'Power' if func == 'power_control' else 'Steering'
+        # primary_targets is e.g. "b2, b1, iii4" — take first two
+        top_muscles = ', '.join(cl['primary_targets'].split(',')[:2]).strip()
+        x_labels.append(f"C{int(cl['cluster_id'])}\n{ftype}\n{top_muscles}\n(n={int(cl['n_interneurons'])})")
+
+    ax.set_xticks(range(len(x_labels)))
+    ax.set_xticklabels(x_labels, fontsize=8)
     ax.set_yticks(range(len(top_20_dns)))
     ax.set_yticklabels([name[:20] for name in top_20_dns['dn_name']], fontsize=8)
-    
-    ax.set_xlabel('IN Cluster', fontsize=12, fontweight='bold')
+
+    ax.set_xlabel('IN Cluster  (function · primary muscles · n INs)', fontsize=11, fontweight='bold')
     ax.set_ylabel('Descending Neuron', fontsize=12, fontweight='bold')
     ax.set_title('DN → Cluster Connectivity', fontsize=14, fontweight='bold')
-    
-    # Color cluster labels
-    cluster_functions = cluster_info['functional_type'].tolist()
-    for i, (label, func) in enumerate(zip(ax.get_xticklabels(), cluster_functions)):
-        if func == 'power_control':
-            label.set_color('#FF6B6B')
-            label.set_fontweight('bold')
-        else:
-            label.set_color('#4ECDC4')
+
+    # Colour cluster labels by function
+    func_label_colors = {'power_control': '#FF6B6B', 'steering_control': '#4ECDC4',
+                         'integrated_control': '#FFA07A', 'unknown': '#888888'}
+    for label, (_, cl) in zip(ax.get_xticklabels(), cluster_info.sort_values('cluster_id').iterrows()):
+        label.set_color(func_label_colors.get(cl['functional_type'], 'black'))
+        label.set_fontweight('bold')
     
     plt.colorbar(im, ax=ax, label='Synapses')
     

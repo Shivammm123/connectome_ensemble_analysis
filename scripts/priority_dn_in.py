@@ -102,7 +102,17 @@ def summarize_dn_priority_connections(dn_to_priority):
     }).rename(columns={
         'target': 'n_priority_ins',
         'weight': 'total_synapses'
-    }).reset_index().sort_values('total_synapses', ascending=False)
+    }).reset_index()
+
+    # Composite rank: geometric mean of normalised synapse total and breadth (n INs contacted).
+    # This makes rankings stable across synapse thresholds — a DN must score well on
+    # both dimensions, so one very strong but narrow connection won't dominate.
+    max_syn = dn_summary['total_synapses'].max()
+    max_ins = dn_summary['n_priority_ins'].max()
+    dn_summary['norm_synapses'] = dn_summary['total_synapses'] / max_syn if max_syn > 0 else 0
+    dn_summary['norm_ins'] = dn_summary['n_priority_ins'] / max_ins if max_ins > 0 else 0
+    dn_summary['composite_rank_score'] = np.sqrt(dn_summary['norm_synapses'] * dn_summary['norm_ins'])
+    dn_summary = dn_summary.sort_values('composite_rank_score', ascending=False)
     
     for i, (_, row) in enumerate(dn_summary.head(10).iterrows(), 1):
         print(f"{str(row['dn_name'])[:38]:<40} {row['n_priority_ins']:<15} {row['total_synapses']:<12.0f} {row['dn_specialization']}")
@@ -251,7 +261,7 @@ def create_dn_priority_visualizations(
     
     # ===== PANEL 4: Connectivity matrix (DN × Top Priority INs) =====
     ax = axes[1, 0]
-    
+
     # Build matrix: Top 20 DNs × Top 20 Priority INs
     n_dns = min(20, len(dn_summary))
     n_ins = min(20, len(in_summary))
@@ -274,7 +284,7 @@ def create_dn_priority_visualizations(
                        rotation=45, ha='right', fontsize=8)
     ax.set_yticks(range(n_dns))
     ax.set_yticklabels([str(dn_summary.iloc[i]['dn_name'])[:25] for i in range(n_dns)], fontsize=8)
-    
+
     ax.set_xlabel('Priority INs (by rank)', fontsize=11, fontweight='bold')
     ax.set_ylabel('Top DNs', fontsize=11, fontweight='bold')
     ax.set_title('DN → Priority IN Connectivity Matrix', fontsize=12, fontweight='bold')
@@ -429,7 +439,10 @@ def main():
     
     # DN→IN connections
     dn_in_conn = pd.read_csv('results/dn_pathways/dn_to_in_connections.csv')
-    print(f"  ✓ DN→IN connections: {len(dn_in_conn):,}")
+    min_synapses = loader.config['analysis']['min_synapses']
+    before = len(dn_in_conn)
+    dn_in_conn = dn_in_conn[dn_in_conn['weight'] >= min_synapses].copy()
+    print(f"  ✓ DN→IN connections: {len(dn_in_conn):,} (filtered from {before:,} at min={min_synapses} synapses)")
     
     # DN classifications
     dn_class = pd.read_csv('results/dn_pathways/dn_classifications.csv')
