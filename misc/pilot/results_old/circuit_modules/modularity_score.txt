@@ -1,0 +1,2 @@
+Network Modularity: 0.5100
+Number of modules: 5

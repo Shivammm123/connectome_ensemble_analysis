@@ -1,6 +1,0 @@
-cluster,n_interneurons,total_synapses,function,top_targets
-1,96,11697.0,power_control,"DLM1, DLM5, DVM1A"
-2,48,3975.0,steering_control,"ps1, b2, iii4"
-3,50,3318.0,steering_control,"b2, b1, iii4"
-4,73,10125.0,steering_control,"hg4, iii4, hg3"
-5,129,11068.0,steering_control,"iii1, b3, i2"
