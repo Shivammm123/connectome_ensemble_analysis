@@ -19,9 +19,8 @@ described in this README is the current, active pipeline.
 4. [Project structure](#project-structure)
 5. [Pipeline steps](#pipeline-steps)
 6. [Running the analysis](#running-the-analysis)
-7. [Headline results so far](#headline-results-so-far)
-8. [Project history: pilot vs. redesign](#project-history-pilot-vs-redesign)
-9. [References](#references)
+7. [Project history: pilot vs. redesign](#project-history-pilot-vs-redesign)
+8. [References](#references)
 
 ---
 
@@ -135,22 +134,6 @@ Repeat for each script in `src/`. Results land in `results/<step_name>/` —
 a data matrix (CSV), a long-form non-zero-edges table, a thresholded table,
 a diagnostics table, a figure (fixed at 16:9 so it drops onto a slide as-is),
 and a `run_summary.txt`.
-
-## Headline results so far
-
-(Full detail and exact figures in [CLAUDE.md](CLAUDE.md) §5; summarised here.)
-
-- Direct DNs together supply a **mean of 8.1%** of a wing muscle's input
-  (max 28.8%, muscle `hg2`) — in line with Cheong's ~9–10% reference for
-  MANC, confirming the connections file is the full edge list, not a subset.
-- `DNp31` is a broad hub: the #1 or #2 direct input source for 5 of the 6
-  flight-power muscles (DLM/DVM). Steering muscles (basalar, haltere,
-  axillary, pleurosternal) each have much more muscle-specific top
-  contributors with little overlap between them.
-- The geometric-mean metric surfaces pathways neither component fraction
-  alone would rank highly — e.g. `DNa08→DLM1` is unremarkable by input
-  fraction alone (0.6%) but dedicates 28.4% of its VNC output there,
-  giving a geometric mean (4.1%) that pulls it into view.
 
 ## Project history: pilot vs. redesign
 
