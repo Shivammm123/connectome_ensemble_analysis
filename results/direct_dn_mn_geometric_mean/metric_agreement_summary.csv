@@ -1,0 +1,7 @@
+criterion,n_edges
+input_fraction (F_in) >= threshold,37
+"output_fraction (F_out,VNC) >= threshold",207
+both individually >= threshold,35
+geometric_mean_fraction (F_geom) >= threshold,88
+F_geom pass but NOT both individually,53
+both individually pass but F_geom does not,0

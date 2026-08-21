@@ -1,0 +1,16 @@
+Direct DN->MN groupwise VNC-restricted output-fraction — run summary
+============================================================
+threshold (display)          : 0.01
+keep untyped DNs             : True
+DN neurons / groups          : 1313 / 544
+  (untyped singletons)       : 3
+wing MNs / muscles           : 50 / 18
+connections rows kept as VNC : 1231465 / 3777046 (0.3260)
+synapses kept as VNC         : 8144265 / 22243310 (0.3661)
+DN neurons w/ zero VNC output: 19
+nonzero DN->muscle edges     : 429
+edges >= threshold           : 207
+mean summed frac/DN group    : 0.0179
+median summed frac/DN group  : 0.0000
+max summed frac/DN group     : 0.5062
+frac DN groups > 0.50        : 0.0037

@@ -161,6 +161,128 @@ codex) export, not the neurons file's format.
     Muscles with the most direct DN drive: hg2, ps1, hg1, b3. This is a first
     pass at face value — not yet cross-checked neuron-by-neuron against Cheong.
 
+- **`src/direct_dn_mn_output_fraction.py`** — Step 02. Groupwise direct DN→MN
+  connectivity by **output fraction** (mirror of step 01: same DN→MN edges,
+  denominator flipped to the DN group's total output instead of the muscle's
+  total input — the "dedication" view rather than the "influence" view; see
+  the script's docstring for why it's NOT valid for cross-dataset comparison,
+  unlike input fraction). Same outputs as step 01 (matrix/long/thresholded/
+  per-group diagnostic table/figure), written to
+  `results/direct_dn_mn_output_fraction/`.
+  - Same `THRESHOLD = 0.01` display cutoff as step 01, for consistency.
+  - `--selftest` reuses step 01's synthetic connectome so the two scripts are
+    cross-checkable; hand-computed answer is F_out = 1.0 for both toy edges
+    (the synthetic DNs have no targets besides the test MNs, so 100% of their
+    output goes there — deliberately exercises the denominator grouping).
+  - Subset-trap check here is a **heuristic, not a published reference**
+    (Cheong's ~9–10% number was specifically about MN input share, doesn't
+    apply to output share) — flags if >10% of DN groups dedicate >50% of
+    their total output to the 18 wing muscles alone.
+  - **Run on real BANC data on 2026-08-21** (results in
+    `results/direct_dn_mn_output_fraction/`). No subset-trap warning: mean
+    summed output fraction to wing muscles = 1.3%, median 0%, max 46.5%
+    (`DNa08`), 0% of DN groups over the 50% heuristic flag. 92 DN groups
+    reach the 1% threshold somewhere (vs. step 01's 23) — expected, since
+    crossing 1% here only requires a small DN output budget, not a big shared
+    muscle total. Most wing-dedicated DN groups: `DNa08` (46.5%, mostly→DLM1),
+    `DNge015` (43.6%), `DNp31` (30.0% — the same broad hub from step 01, but
+    now a *smaller* share of its own huge output budget than its outsized
+    share of muscle input). `DNa08→DLM1` is the single strongest edge (26.3%
+    of DNa08's entire output).
+
+- **`src/direct_dn_mn_vnc_output_fraction.py`** — Step 02b. Variant of step
+  02: same output-fraction math, but the denominator (and, for consistency,
+  the numerator) is restricted to synapses physically located in a VNC
+  neuropil, excluding a DN's brain-side output entirely. Answers "of this
+  DN's *local VNC processing budget*, what share drives wing muscles?" rather
+  than step 02's "of its *entire* output, brain included, what share?" — this
+  is the version that would actually be comparable across BANC/MANC/maleCNS
+  per the cross-dataset item below, since it matches how step 01's MN-input
+  denominator was always VNC-local. VNC membership comes straight from the
+  connections file's own `neuropil` column (`VNC_...` prefix, 114 distinct
+  neuropil values, no separate neuron-level classification needed) — verified
+  against the real file: VNC synapses are 36.6% of the whole connectome
+  (8.14M / 22.2M), with a negligible ambiguous "neck" category (872 synapses,
+  0.004%, excluded from both VNC and brain).
+  - `--selftest` extends step 02's synthetic connectome with one extra
+    brain-tagged edge and asserts the VNC filter drops exactly that row.
+  - **Run on real BANC data on 2026-08-21** (results in
+    `results/direct_dn_mn_vnc_output_fraction/`). No subset-trap warning.
+    32.6% of connection rows / 36.6% of synapses are VNC-tagged; only 19/1313
+    DNs (1.4%) show zero VNC output (plausible — truncated reconstructions —
+    not a red flag). Mean summed VNC-output fraction to wing muscles = 1.8%,
+    median 0%, max 50.6% (`DNge015`), only 0.4% of DN groups over the 50%
+    heuristic flag. As expected, VNC-restricted fractions are uniformly ≥ the
+    whole-connectome ones from step 02 (smaller denominator, same numerator)
+    — ratio ranges from ~1.06× up to ~2.1× (`DNpe010`, `DNp03`): those two
+    DNs' brain-side arbor is doing a lot to dilute their step-02 number even
+    though, locally within the VNC, close to a third to a quarter of their
+    output already goes to wing muscles.
+
+- **`src/direct_dn_mn_geometric_mean.py`** — Step 03. Combines step 01
+  (input fraction) and step 02b (VNC-restricted output fraction) as
+  `F_geom = sqrt(F_in * F_out,VNC)`, per Cheong et al.'s pathway-exploration
+  metric — self-contained (recomputes both component fractions from raw
+  data rather than reading steps 01/02b's saved CSVs, same standalone
+  convention as the rest of this pipeline). VNC-restricted output fraction
+  was chosen over step 02's whole-connectome version because it's on the
+  same VNC-local footing as step 01's denominator (verified: wing-MN input
+  is 100% VNC-tagged, so this doesn't change F_in's value from step 01 at
+  all — only adds the matching VNC-restricted F_out side). Unlike steps
+  01/02/02b, this is fundamentally an **edge/pathway-level** metric, not a
+  per-group total — its main output is a ranked pathway list, not a summed
+  "sanity check" per DN group or muscle.
+  - `--selftest` reuses step 02b's synthetic connectome; unlike 02/02b's toy
+    tests (which both landed at a trivial 1.0), this one has genuinely
+    different F_in (0.308) and F_out (1.0) for one edge, giving a
+    non-trivial hand-computed F_geom = 0.5547 — a better exercise of the
+    sqrt(a·b) math than a case where both inputs are already 1.
+  - Also prints/saves a **metric-agreement table**: how many edges clear
+    THRESHOLD under F_in alone, F_out,VNC alone, both individually, and
+    F_geom — because `sqrt(a*b) >= T` does NOT strictly require both
+    `a >= T` and `b >= T` (one very strong side can still pull the mean over
+    the line), so this is checked empirically rather than assumed.
+  - **Run on real BANC data on 2026-08-21** (by the user, per the write-not-run
+    convention — results in `results/direct_dn_mn_geometric_mean/`). 429
+    nonzero direct edges; 37 clear THRESHOLD by F_in alone, 207 by F_out,VNC
+    alone, 35 by **both** individually, 88 by F_geom. Metric-agreement check
+    confirms the math cleanly: **0** edges pass both individually but fail
+    F_geom (mathematically guaranteed — sqrt(a·b) >= T whenever a,b >= T),
+    while **53** edges pass F_geom without passing both sides individually —
+    real confirmation that F_geom is not a strict AND, exactly as the
+    docstring warned. Top pathway: `DNg02→ps1` (F_in=5.5%, F_out=14.2%,
+    F_geom=8.8%). Notable case `DNa08→DLM1`: F_in only 0.6% (unremarkable by
+    step 01 alone) but F_out=28.4% (DNa08 dedicates a lot of its VNC output
+    here) → F_geom=4.1%, surfacing a pathway step 01 ranked much lower — the
+    kind of edge this combined metric exists to catch.
+
+- **`src/top_dns_per_muscle.py`** — Step 04. Not a new metric — a reporting
+  view on top of step 01: for each wing muscle, its top `TOP_N=5` DN groups
+  ranked by **input fraction** (never raw synapse count, per the project's
+  core rule — raw counts are shown alongside for context only). Kept
+  self-contained (recomputes step 01's input-fraction math from raw data)
+  for the same standalone-script reason as every other step here, even
+  though it duplicates step 01's core computation.
+  - Outputs a long table (one row per muscle × rank) and a wide table (one
+    row per muscle, columns rank1..rank5 + a `cumulative_top5_fraction`).
+  - Figure is a small-multiples grid — one mini bar chart per muscle, all 18
+    shown at once (6×3 grid). Unlike steps 01-03's heatmaps, this needed no
+    `TOP_N_ROWS` truncation logic: the muscle count is small and fixed, so
+    there's no unbounded-growth problem to cap.
+  - `--selftest` reuses step 01's synthetic connectome, which happens to
+    have only 1 contributing DN group per muscle — deliberately exercises
+    the "fewer than N available" path (must show exactly what exists, no
+    padding, no error).
+  - **Run on real BANC data on 2026-08-21** (by the user — results in
+    `results/top_dns_per_muscle/`). Only 1 of 18 muscles (`iii3`) has fewer
+    than 5 contributing DN groups (it has 4). `DNp31` is the #1 or #2 DN for
+    5 of the 6 flight-power muscles (DLM1/DLM5/DVM1A/DVM2A/DVM3A), confirming
+    its broad-hub character from steps 01-03; steering muscles (b1-b3,
+    hg1-hg4, i1-i2, iii1-iii4, ps1) each have a much more muscle-specific
+    top-5 list with little overlap between them — consistent with steering
+    muscles being individually controlled rather than sharing a few
+    generalist DNs the way the power muscles seem to.
+
 ---
 
 ## 6. Open decisions — flag these, don't assume
@@ -172,21 +294,33 @@ codex) export, not the neurons file's format.
   alongside the input-fraction threshold, and at what value.
 - **Untyped DNs.** Currently kept as singletons (`KEEP_UNTYPED_DNS = True`).
   Revisit whether to exclude them; report the count either way.
-- **Next metrics (planned).** Output fraction, then the geometric mean of input
-  and output fractions (favours edges strong from both sides — Cheong used this
-  for pathway exploration). These come after direct input-fraction is solid.
+- **Next metric — done, pending your real-data run.** Step 03
+  (`direct_dn_mn_geometric_mean.py`) is written, using VNC-restricted output
+  fraction (step 02b) paired with input fraction (step 01), as reasoned in
+  §5. Run it and check the metric-agreement table and top pathways before
+  trusting the numbers, same as every other step here.
 - **Cross-dataset replication (later goal).** Intent is to repeat across BANC /
   MANC / maleCNS. When we do: normalise on the **MN side** (VNC-local, comparable);
   DN-side normalisation is NOT comparable across full-CNS vs VNC-only datasets
-  without restricting BANC's denominator to VNC inputs. Cell-type matching across
-  datasets is a real sub-project, not a given.
+  without restricting BANC's denominator to VNC inputs — **step 02b
+  (`direct_dn_mn_vnc_output_fraction.py`) already does this restriction**, using
+  the connections file's own `neuropil` column, and is the metric to use for this
+  goal rather than step 02. Cell-type matching across datasets is still a real
+  sub-project, not a given.
 
 ---
 
 ## 7. Working style for this project
 
-- Verify before trusting. When a script can be run against real data, run it and
-  check the diagnostics rather than assuming the numbers are right.
+- **As of 2026-08-21, Claude writes/edits pipeline scripts but does not run them**
+  — the user runs scripts themselves and reviews results (a `python -m
+  py_compile` syntax check is fine, that's not a run). This means new/edited
+  scripts in this repo may be unverified against real data until the user
+  runs them — don't assume a script "works" just because it was written
+  carefully; check whether its docstring/CLAUDE.md notes say it's been run.
+- Verify before trusting. Where a script's real-data diagnostics are already
+  known (because it's been run), treat those as established; where they
+  aren't yet, say so plainly rather than assuming the numbers are right.
 - Be explicit about what is verified vs assumed, especially anything depending on
   the connections file being complete.
 - Don't reach for multi-hop, signed, or effective-connectivity machinery yet —

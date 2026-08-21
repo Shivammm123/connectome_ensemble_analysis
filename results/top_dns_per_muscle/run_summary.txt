@@ -1,0 +1,27 @@
+Top-N DNs per wing muscle, by direct input fraction — run summary
+============================================================
+top N                        : 5
+keep untyped DNs             : True
+DN neurons / groups          : 1313 / 544
+wing MNs / muscles           : 50 / 18
+muscles with < 5 contributing DN groups : 1
+
+top 5 DNs per muscle:
+  DLM1: DNp31 (2.1%), DNg02 (0.9%), DNa08 (0.6%), DNg82 (0.6%), DNut053 (0.4%)
+  DLM5: DNp31 (1.4%), DNg27 (1.0%), DNg82 (0.6%), DNut053 (0.6%), DNg02 (0.5%)
+  DVM1A: DNp31 (1.7%), DNg02 (1.1%), DNge148 (0.8%), DNpe053 (0.4%), DNp33 (0.4%)
+  DVM2A: DNp31 (3.0%), DNg02 (1.2%), DNa08 (1.1%), DNge148 (0.4%), DNg110 (0.3%)
+  DVM3A: DNge148 (2.2%), DNp31 (2.0%), DNg02 (1.3%), DNge049 (0.4%), DNxl130 (0.4%)
+  b1: DNxn125 (2.3%), DNut040 (0.5%), DNb05 (0.3%), DNge175 (0.1%), DNut058 (0.1%)
+  b2: DNxn125 (1.0%), DNg17 (0.9%), DNut040 (0.6%), DNb05 (0.5%), DNg82 (0.2%)
+  b3: DNa15 (1.3%), DNa04 (1.1%), DNae002 (0.9%), DNa10 (0.9%), DNp22 (0.7%)
+  hg1: DNa04 (2.0%), DNg04 (1.3%), DNut040 (0.7%), DNa15 (0.7%), DNbe005 (0.7%)
+  hg2: DNp63 (4.3%), DNg82 (3.6%), DNpe005 (2.8%), DNg05 (2.6%), DNb07 (2.5%)
+  hg3: DNg05 (1.5%), DNut040 (1.5%), DNb07 (1.1%), DNut053 (0.5%), DNxn125 (0.4%)
+  hg4: DNg04 (1.3%), DNa16 (1.0%), DNg10 (0.9%), DNut040 (0.5%), DNa04 (0.5%)
+  i1: DNa05 (1.0%), DNa04 (0.9%), DNut037 (0.7%), DNa15 (0.7%), DNp22 (0.6%)
+  i2: DNa10 (2.9%), DNxn124 (1.3%), DNg08 (0.4%), DNp33 (0.4%), DNp22 (0.2%)
+  iii1: DNp49 (2.7%), DNp05 (0.6%), DNxn163 (0.2%), DNg108 (0.2%), DNge048 (0.1%)
+  iii3: DNut054 (0.3%), DNut062 (0.1%), DNg32 (0.1%), DNge118 (0.1%)
+  iii4: DNp33 (0.4%), DNp13 (0.2%), DNg04 (0.2%), DNa04 (0.2%), DNxl082 (0.2%)
+  ps1: DNg02 (5.5%), DNp31 (2.4%), DNg110 (1.0%), DNg108 (0.7%), DNg93 (0.7%)

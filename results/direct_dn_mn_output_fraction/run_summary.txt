@@ -1,0 +1,13 @@
+Direct DN->MN groupwise output-fraction — run summary
+============================================================
+threshold (display)          : 0.01
+keep untyped DNs             : True
+DN neurons / groups          : 1313 / 544
+  (untyped singletons)       : 3
+wing MNs / muscles           : 50 / 18
+nonzero DN->muscle edges     : 429
+edges >= threshold           : 170
+mean summed frac/DN group    : 0.0131
+median summed frac/DN group  : 0.0000
+max summed frac/DN group     : 0.4651
+frac DN groups > 0.50        : 0.0000

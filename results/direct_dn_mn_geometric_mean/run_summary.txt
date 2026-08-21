@@ -1,0 +1,37 @@
+Direct DN->MN groupwise geometric-mean fraction — run summary
+============================================================
+threshold (display)          : 0.01
+keep untyped DNs             : True
+DN neurons / groups          : 1313 / 544
+  (untyped singletons)       : 3
+wing MNs / muscles           : 50 / 18
+VNC rows kept                : 1231465 / 3777046
+nonzero DN->muscle edges     : 429
+edges >= threshold (F_geom)  : 88
+
+metric agreement:
+                                    criterion  n_edges
+           input_fraction (F_in) >= threshold       37
+     output_fraction (F_out,VNC) >= threshold      207
+               both individually >= threshold       35
+geometric_mean_fraction (F_geom) >= threshold       88
+        F_geom pass but NOT both individually       53
+   both individually pass but F_geom does not        0
+
+top 15 pathways by geometric mean:
+dn_group muscle  input_fraction  output_fraction  geometric_mean_fraction
+   DNg02    ps1        0.054949         0.142204                 0.088396
+   DNp63    hg2        0.043020         0.125303                 0.073420
+   DNa10     i2        0.029277         0.133144                 0.062434
+   DNp31   DLM1        0.020552         0.154074                 0.056272
+   DNg82    hg2        0.035526         0.084712                 0.054859
+   DNp31    ps1        0.023615         0.076402                 0.042476
+  DNg110    ps1        0.010401         0.171892                 0.042283
+   DNa08   DLM1        0.005957         0.283602                 0.041102
+   DNg04    hg1        0.013290         0.115646                 0.039205
+   DNp49   iii1        0.026869         0.055585                 0.038646
+   DNg04    hg4        0.013107         0.111111                 0.038163
+   DNa04    hg1        0.020240         0.070735                 0.037837
+   DNg26    ps1        0.003990         0.324468                 0.035982
+ DNpe005    hg2        0.028032         0.043742                 0.035017
+   DNg05    hg2        0.025534         0.043893                 0.033478

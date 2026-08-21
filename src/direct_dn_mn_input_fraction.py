@@ -158,6 +158,15 @@ KEEP_UNTYPED_DNS = True
 CHEONG_TOTAL_DN_FRACTION_REF = 0.10
 SUBSET_TRAP_WARN_LEVEL = 0.50   # summed DN fraction above this => likely subset
 
+# Figure sizing: the heatmap shows every DN group that clears THRESHOLD
+# somewhere, but capped to the top TOP_N_ROWS by strongest connection — with
+# hundreds of possible DN groups (see steps 02/02b), showing all of them
+# makes a figure too tall to read or to fit on a slide. The full,
+# untruncated matrix is always in the saved CSVs regardless; this only
+# affects the figure. The figure's overall size is fixed at 16:9
+# (13.33 x 7.5in) so it always drops cleanly onto a widescreen slide.
+TOP_N_ROWS = 25
+
 
 # =============================================================================
 # CORE COMPUTATION
@@ -276,7 +285,10 @@ def summarise_per_muscle(long_df: pd.DataFrame,
 
 
 # =============================================================================
-# FIGURE  — must display the formula logic, per the project spec.
+# FIGURE  — must display the formula logic, per the project spec. Fixed at
+#           16:9 (13.33 x 7.5in) so it drops straight onto a widescreen slide
+#           no matter how many DN groups clear the threshold — see
+#           TOP_N_ROWS above for how the row count is capped.
 # =============================================================================
 def make_figure(long_df: pd.DataFrame,
                 per_muscle: pd.DataFrame,
@@ -288,20 +300,25 @@ def make_figure(long_df: pd.DataFrame,
     from matplotlib.gridspec import GridSpec
 
     # Build DN-group x muscle matrix, keeping only DN groups that reach THRESHOLD
-    # somewhere (otherwise the heatmap is mostly empty rows).
+    # somewhere (otherwise the heatmap is mostly empty rows), then cap to the
+    # top TOP_N_ROWS by strongest connection for a readable, slide-sized figure.
+    # The full matrix (untruncated) is still in the saved CSVs regardless.
     mat = long_df.pivot_table(index="dn_group", columns="muscle",
                               values="input_fraction", aggfunc="sum", fill_value=0.0)
     keep_rows = mat.max(axis=1) >= THRESHOLD
     mat_shown = mat.loc[keep_rows]
-    # Order rows by their strongest connection for readability.
     mat_shown = mat_shown.loc[mat_shown.max(axis=1).sort_values(ascending=False).index]
+    n_above_threshold = mat_shown.shape[0]
+    truncated = n_above_threshold > TOP_N_ROWS
+    if truncated:
+        mat_shown = mat_shown.iloc[:TOP_N_ROWS]
 
-    n_rows = max(mat_shown.shape[0], 1)
-    fig = plt.figure(figsize=(13, max(6.5, 0.28 * n_rows + 4.5)), dpi=150)
-    gs = GridSpec(2, 2, width_ratios=[3.2, 1.0], height_ratios=[1.7, 6.0],
-                  hspace=0.42, wspace=0.30)
+    fig = plt.figure(figsize=(13.33, 7.5), dpi=150)
+    gs = GridSpec(2, 2, width_ratios=[3.2, 1.0], height_ratios=[1.0, 5.2],
+                  hspace=0.5, wspace=0.30, top=0.90, bottom=0.09,
+                  left=0.06, right=0.99)
 
-    # --- Formula / methods panel (top-left) : shows the logic explicitly -----
+    # --- Formula / methods panel (top) : shows the logic explicitly --------
     ax_formula = fig.add_subplot(gs[0, :])
     ax_formula.axis("off")
     formula = (
@@ -309,16 +326,14 @@ def make_figure(long_df: pd.DataFrame,
         r"\dfrac{\sum_{d\in G_{DN}}\sum_{m\in G_{MN}} w(d\rightarrow m)}"
         r"{\sum_{m\in G_{MN}} \mathrm{TotalInput}(m)}$"
     )
-    ax_formula.text(0.01, 0.92, "Groupwise direct DN$\\rightarrow$MN input fraction",
-                    fontsize=14, fontweight="bold", va="top")
-    ax_formula.text(0.02, 0.24, formula, fontsize=15, va="center")
-    ax_formula.text(0.50, 0.24,
+    ax_formula.text(0.02, 0.55, formula, fontsize=14, va="center")
+    ax_formula.text(0.50, 0.55,
                     "numerator: all synapses DN type $\\rightarrow$ muscle\n"
                     "denominator: muscle's TOTAL input (whole connectome)",
                     fontsize=9, va="center", color="#444444")
     if demo:
-        ax_formula.text(0.99, 0.98, "DEMO / SELF-TEST DATA — not real results",
-                        fontsize=10, color="#B00020", fontweight="bold",
+        ax_formula.text(0.99, 0.95, "DEMO / SELF-TEST DATA — not real results",
+                        fontsize=9, color="#B00020", fontweight="bold",
                         va="top", ha="right")
 
     # --- Heatmap (bottom-left) : the main result ----------------------------
@@ -334,12 +349,15 @@ def make_figure(long_df: pd.DataFrame,
         ax.set_xticklabels(mat_shown.columns, rotation=90, fontsize=8)
         ax.set_yticks(range(mat_shown.shape[0]))
         ax.set_yticklabels(mat_shown.index, fontsize=7)
-        ax.set_xlabel("Wing motor-neuron group (muscle)", fontsize=10, fontweight="bold")
-        ax.set_ylabel(f"DN group  (max $F_{{\\mathrm{{in}}}}$ across muscles "
-                      f"$\\geq$ {THRESHOLD:g})",
-                      fontsize=10, fontweight="bold")
+        ax.set_xlabel("Wing motor-neuron group (muscle)", fontsize=9, fontweight="bold")
+        if truncated:
+            ylabel = (f"DN group  (top {len(mat_shown)} of {n_above_threshold} "
+                      f"with max $F_{{\\mathrm{{in}}}}$ $\\geq$ {THRESHOLD:g})")
+        else:
+            ylabel = f"DN group  (max $F_{{\\mathrm{{in}}}}$ across muscles $\\geq$ {THRESHOLD:g})"
+        ax.set_ylabel(ylabel, fontsize=9, fontweight="bold")
         cbar = fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
-        cbar.set_label("input fraction $F_{\\mathrm{in}}$", fontsize=9)
+        cbar.set_label("input fraction $F_{\\mathrm{in}}$", fontsize=8)
 
     # --- Sanity-check bar (bottom-right) : total DN fraction per muscle ------
     axb = fig.add_subplot(gs[1, 1])
@@ -352,7 +370,10 @@ def make_figure(long_df: pd.DataFrame,
     axb.set_title("sanity check", fontsize=9)
 
     fig.suptitle("Direct descending $\\rightarrow$ wing motor connectivity  ·  "
-                 "groupwise input fraction", fontsize=13, fontweight="bold")
+                 "groupwise input fraction", fontsize=13, fontweight="bold", y=0.985)
+    # bbox_inches="tight" only trims excess whitespace — it can shrink the
+    # saved image below figsize but never grow it, so the 16:9 target still
+    # holds as an upper bound even if a label needs a touch more room.
     fig.savefig(out_path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
