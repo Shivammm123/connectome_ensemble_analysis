@@ -172,6 +172,14 @@ SUBSET_TRAP_WARN_GROUP_FRACTION = 0.10
 # figure itself is fixed at 16:9 (13.33 x 7.5in) to drop onto a slide as-is.
 TOP_N_ROWS = 25
 
+# --- Figure style: validated palette (dataviz skill's references/palette.md) ---
+CAT_BLUE, CAT_ORANGE, CAT_AQUA, CAT_YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
+CAT_MAGENTA, CAT_GREEN, CAT_VIOLET, CAT_RED = "#e87ba4", "#008300", "#4a3aa7", "#e34948"
+INK, INK_SOFT, INK_MUTED = "#0b0b0b", "#52514e", "#898781"
+GRID_HAIRLINE, AXIS_LINE = "#e1e0d9", "#c3c2b7"
+SEQUENTIAL_BLUE_STEPS = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5",
+                         "#256abf", "#184f95", "#0d366b"]
+
 
 # =============================================================================
 # CORE COMPUTATION  — identical in shape to step 02; only the connections
@@ -275,6 +283,9 @@ def make_figure(long_df: pd.DataFrame,
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.gridspec import GridSpec
+    from matplotlib.colors import LinearSegmentedColormap
+
+    seq_blue = LinearSegmentedColormap.from_list("seq_blue", SEQUENTIAL_BLUE_STEPS)
 
     mat = long_df.pivot_table(index="dn_group", columns="muscle",
                               values="output_fraction", aggfunc="sum", fill_value=0.0)
@@ -298,12 +309,12 @@ def make_figure(long_df: pd.DataFrame,
         r"\dfrac{\sum_{d\in G_{DN}}\sum_{m\in G_{MN}} w_{\mathrm{VNC}}(d\rightarrow m)}"
         r"{\sum_{d\in G_{DN}} \mathrm{TotalOutput}_{\mathrm{VNC}}(d)}$"
     )
-    ax_formula.text(0.02, 0.55, formula, fontsize=13, va="center")
+    ax_formula.text(0.02, 0.55, formula, fontsize=13, va="center", color=INK)
     ax_formula.text(0.50, 0.55,
                     "numerator: synapses DN type $\\rightarrow$ muscle, VNC neuropils only\n"
                     "denominator: DN type's TOTAL output, VNC neuropils only\n"
                     "(excludes brain-side output — see script docstring)",
-                    fontsize=9, va="center", color="#444444")
+                    fontsize=9, va="center", color=INK_SOFT)
     if demo:
         ax_formula.text(0.99, 0.95, "DEMO / SELF-TEST DATA — not real results",
                         fontsize=9, color="#B00020", fontweight="bold",
@@ -315,36 +326,46 @@ def make_figure(long_df: pd.DataFrame,
                 ha="center", va="center")
         ax.axis("off")
     else:
-        im = ax.imshow(mat_shown.values, aspect="auto", cmap="magma_r",
+        im = ax.imshow(mat_shown.values, aspect="auto", cmap=seq_blue,
                        vmin=0.0, vmax=max(mat_shown.values.max(), THRESHOLD))
         ax.set_xticks(range(mat_shown.shape[1]))
-        ax.set_xticklabels(mat_shown.columns, rotation=90, fontsize=8)
+        ax.set_xticklabels(mat_shown.columns, rotation=90, fontsize=8, color=INK_SOFT)
         ax.set_yticks(range(mat_shown.shape[0]))
-        ax.set_yticklabels(mat_shown.index, fontsize=7)
-        ax.set_xlabel("Wing motor-neuron group (muscle)", fontsize=9, fontweight="bold")
+        ax.set_yticklabels(mat_shown.index, fontsize=7, color=INK_SOFT)
+        ax.tick_params(colors=AXIS_LINE)
+        for spine in ax.spines.values():
+            spine.set_color(AXIS_LINE)
+        ax.set_xlabel("Wing motor-neuron group (muscle)", fontsize=9, fontweight="bold", color=INK)
         if truncated:
             ylabel = (f"DN group  (top {len(mat_shown)} of {n_above_threshold} with max "
                       f"$F_{{\\mathrm{{out,VNC}}}}$ $\\geq$ {THRESHOLD:g})")
         else:
             ylabel = (f"DN group  (max $F_{{\\mathrm{{out,VNC}}}}$ across muscles "
                       f"$\\geq$ {THRESHOLD:g})")
-        ax.set_ylabel(ylabel, fontsize=9, fontweight="bold")
+        ax.set_ylabel(ylabel, fontsize=9, fontweight="bold", color=INK)
         cbar = fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
-        cbar.set_label("VNC output fraction $F_{\\mathrm{out,VNC}}$", fontsize=8)
+        cbar.set_label("VNC output fraction $F_{\\mathrm{out,VNC}}$", fontsize=8, color=INK)
+        cbar.ax.tick_params(colors=AXIS_LINE, labelcolor=INK_SOFT)
+        cbar.outline.set_edgecolor(AXIS_LINE)
 
     axb = fig.add_subplot(gs[1, 1])
     pm = per_dn_group.loc[mat_shown.index].sort_values("total_wing_output_fraction") \
         if mat_shown.size else per_dn_group.iloc[0:0]
-    axb.barh(range(len(pm)), pm["total_wing_output_fraction"].values,
-             color="#3B6EA5", edgecolor="black", linewidth=0.4)
+    axb.barh(range(len(pm)), pm["total_wing_output_fraction"].values, color=CAT_BLUE)
     axb.set_yticks(range(len(pm)))
-    axb.set_yticklabels(pm.index, fontsize=6)
-    axb.set_xlabel("total VNC output fraction\nto wing muscles (all 18)", fontsize=8, fontweight="bold")
-    axb.set_title("sanity check", fontsize=9)
+    axb.set_yticklabels(pm.index, fontsize=6, color=INK_SOFT)
+    axb.tick_params(colors=AXIS_LINE)
+    for spine in ["top", "right"]:
+        axb.spines[spine].set_visible(False)
+    for spine in ["left", "bottom"]:
+        axb.spines[spine].set_color(AXIS_LINE)
+    axb.set_xlabel("total VNC output fraction\nto wing muscles (all 18)", fontsize=8,
+                  fontweight="bold", color=INK)
+    axb.set_title("sanity check", fontsize=9, color=INK)
 
     fig.suptitle("Direct descending $\\rightarrow$ wing motor connectivity  ·  "
                  "groupwise VNC-restricted output fraction", fontsize=12.5,
-                 fontweight="bold", y=0.985)
+                 fontweight="bold", y=0.985, color=INK)
     fig.savefig(out_path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 

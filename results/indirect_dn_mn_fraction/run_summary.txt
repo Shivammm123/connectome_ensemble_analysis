@@ -1,0 +1,52 @@
+Indirect DN->IN->MN groupwise 2-hop fraction — run summary
+============================================================
+threshold (display)             : 0.01
+keep untyped DNs / INs           : True / True
+DN neurons / groups              : 1313 / 544
+wing MNs / muscles               : 50 / 18
+VNC-intrinsic candidates          : 12759
+premotor INs / IN groups          : 2153 / 585
+  (untyped IN singletons)         : 1
+DN->IN nonzero edges              : 6730
+IN->MN nonzero edges              : 2184
+indirect DN->muscle nonzero edges : 5680
+edges >= threshold                : 18
+
+per-muscle direct vs indirect vs combined:
+       direct_total_fraction  indirect_total_fraction  combined_total
+hg2                   0.2875                   0.1892          0.4768
+hg1                   0.1179                   0.1691          0.2870
+hg3                   0.0708                   0.1904          0.2612
+ps1                   0.1261                   0.1192          0.2453
+b3                    0.1092                   0.1227          0.2319
+DVM3A                 0.0898                   0.1372          0.2270
+hg4                   0.0688                   0.1571          0.2259
+i1                    0.0844                   0.1174          0.2018
+DLM1                  0.0721                   0.1294          0.2015
+DVM2A                 0.0718                   0.1278          0.1996
+i2                    0.0668                   0.1314          0.1982
+DVM1A                 0.0650                   0.1309          0.1960
+b2                    0.0551                   0.1267          0.1817
+DLM5                  0.0610                   0.1151          0.1761
+iii3                  0.0054                   0.1688          0.1742
+iii4                  0.0218                   0.1351          0.1569
+b1                    0.0347                   0.1164          0.1511
+iii1                  0.0412                   0.0820          0.1232
+
+top 15 indirect pathways:
+dn_group muscle  indirect_fraction
+   DNg27  DVM3A           0.036590
+   DNg27  DVM2A           0.035705
+   DNg27  DVM1A           0.026394
+ DNxn124    hg3           0.018772
+ DNxn124     i2           0.015872
+   DNg27   DLM1           0.014245
+   DNg02  DVM2A           0.014063
+   DNb07    hg2           0.013497
+   DNa10     i2           0.013356
+   DNg27   DLM5           0.013299
+   DNg02   DLM1           0.013192
+   DNg02  DVM3A           0.012979
+   DNg02  DVM1A           0.011943
+   DNb07    hg3           0.011770
+ DNxn124    ps1           0.010797

@@ -1,0 +1,30 @@
+Power vs. steering: direct vs. indirect DN drive — run summary
+============================================================
+muscles: 18 {'steering': np.int64(13), 'power': np.int64(5)}
+
+per-muscle:
+      muscle_type  direct_total_fraction  indirect_total_fraction  direct_share
+DVM3A       power                 0.0898                   0.1372        0.3954
+DVM2A       power                 0.0718                   0.1278        0.3598
+DLM1        power                 0.0721                   0.1294        0.3576
+DLM5        power                 0.0610                   0.1151        0.3464
+DVM1A       power                 0.0650                   0.1309        0.3318
+hg2      steering                 0.2875                   0.1892        0.6031
+ps1      steering                 0.1261                   0.1192        0.5141
+b3       steering                 0.1092                   0.1227        0.4710
+i1       steering                 0.0844                   0.1174        0.4183
+hg1      steering                 0.1179                   0.1691        0.4107
+i2       steering                 0.0668                   0.1314        0.3368
+iii1     steering                 0.0412                   0.0820        0.3344
+hg4      steering                 0.0688                   0.1571        0.3047
+b2       steering                 0.0551                   0.1267        0.3030
+hg3      steering                 0.0708                   0.1904        0.2709
+b1       steering                 0.0347                   0.1164        0.2295
+iii4     steering                 0.0218                   0.1351        0.1390
+iii3     steering                 0.0054                   0.1688        0.0310
+
+per-type summary:
+             n_muscles  mean_direct_total_fraction  mean_indirect_total_fraction  mean_direct_share  median_direct_share
+muscle_type                                                                                                             
+power                5                      0.0719                        0.1281             0.3582               0.3576
+steering            13                      0.0838                        0.1404             0.3359               0.3344

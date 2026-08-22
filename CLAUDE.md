@@ -49,8 +49,11 @@ replication of Cheong.
   - MN groups = muscles / motor pools, from the curated `motor_pools.csv`.
 - **Not in scope yet:** neurotransmitter signs (E/I) — the connectome's NT
   predictions are not something we trust yet, so keep everything unsigned for
-  now. Multi-hop / effective-connectivity ("hop") methods are **deprioritised** —
-  focus on direct and shallow structure first.
+  now. Deep multi-hop / effective-connectivity machinery (3+ hops, full-graph
+  cascades) is still **deprioritised**. Shallow 2-hop indirect connectivity
+  (DN→premotor IN→MN) is now in scope as of step 05 — see §5 — restricted to
+  a well-defined premotor-IN layer rather than the full connectome, keeping
+  it "shallow structure" in spirit.
 
 ### The one thing that can silently break correctness — the "subset trap"
 
@@ -283,6 +286,113 @@ codex) export, not the neurons file's format.
     muscles being individually controlled rather than sharing a few
     generalist DNs the way the power muscles seem to.
 
+- **`src/indirect_dn_mn_fraction.py`** — Step 05. First indirect-connectivity
+  step: 2-hop DN→premotor-IN→MN, using the exact same input-fraction formula
+  from step 01 for each hop (`F(DN→IN)`, `F(IN→MN)`), combined per DN-muscle
+  pair as `F_indirect = sum over premotor-IN-groups of F(DN→IN) × F(IN→MN)`
+  — implemented as a straightforward matrix product (DN×IN matrix @ IN×muscle
+  matrix). Two design decisions were made with the user rather than assumed:
+  - **Premotor-IN scope**: restricted to `Super Class ==
+    "ventral_nerve_cord_intrinsic"` with any direct synapse onto a wing MN.
+    Verified against real data: 12,759 VNC-intrinsic neurons total (matches
+    the pilot's own count exactly), 2,153 qualify as premotor. Also verified:
+    VNC-intrinsic neurons' synapses (as source or target) are **100%
+    VNC-tagged already** (7,248,662 / 7,248,662) — so unlike step 02b for
+    DNs, no separate VNC-restriction step is needed for this leg; the
+    classification itself already guarantees VNC-locality.
+  - **Combination formula**: product-of-fractions summed over bridging INs
+    (the standard descriptive-connectomics approach, generalizing step 03's
+    geometric-mean precedent). This rests on a "proportional flow-through"
+    simplifying assumption — documented explicitly in the script's docstring
+    as an approximation, not a biophysical claim.
+  - **Important asymmetry vs. steps 01-04**: `F_indirect` is **NOT bounded by
+    1.0** when summed, unlike `F_in`. Each term in the sum has its own
+    independent denominator (a different IN's total input), so there's no
+    shared budget forcing the total down the way there was for direct input
+    fraction. Treat it as a relative influence/ranking score, not a
+    probability-like fraction — the script's diagnostics and figure both say
+    this explicitly rather than implying a false bound.
+  - Also recomputes step 01's direct fraction inline (for comparison only,
+    not saved as its own step) to produce a per-muscle
+    `muscle_direct_vs_indirect_totals.csv`: direct vs. indirect vs. combined
+    DN-attributable drive per muscle.
+  - `--selftest` uses a hand-computed 2-hop synthetic connectome (two premotor
+    INs bridging one DN→muscle pair, plus one non-premotor VNC-intrinsic
+    neuron that must be correctly excluded, plus a direct DN→MN edge to
+    exercise the direct-vs-indirect comparison) — expected `F_indirect =
+    1/14 = 0.071429`, hand-verified.
+  - **Not yet run against real BANC data** — written 2026-08-21, same
+    unverified-until-run status as steps 03/04.
+
+- **`src/direct_vs_indirect_dn_mn_pathways.py`** — Step 06. Prompted by user
+  feedback that step 05's full dense DN-group x muscle indirect matrix is
+  hard to interpret on its own (going from the sparse 429-edge direct layer
+  through ~2,153 premotor INs makes the indirect layer combinatorially much
+  denser). Reframes the question to anchor on the direct layer instead: for
+  each (DN group, muscle) pair, report `F_in` and `F_indirect` side by side
+  and classify as `direct_only` / `indirect_only` / `both` (THRESHOLD on
+  each side) — a properly fraction-normalised redo of the pilot's old
+  `dn_pathway_strategies.csv` (which used a raw synapse-count threshold).
+  Self-contained (recomputes steps 01 and 05's math from raw data, same
+  convention as the rest of the pipeline). Reports at two resolutions —
+  edge-level (primary: same DN, same muscle) and a coarser DN-group rollup
+  (across all muscles the DN touches, not necessarily the same one for both
+  pathway types) — explicitly documented as different questions, not to be
+  conflated.
+  - `--selftest` covers all three categories against one muscle in one toy
+    connectome (`DNx`→both, `DNy`→direct_only, `DNz`→indirect_only), all
+    hand-verified.
+  - **Not yet run against real BANC data** — written 2026-08-21, same
+    unverified-until-run status as steps 03/04/05.
+
+- **Interneuron functional clustering — tried, then REMOVED (2026-08-21 to
+  2026-08-22).** Attempted `src/interneuron_functional_clustering.py` as a
+  candidate replacement for steps 05/06's cell-type-based premotor-IN
+  grouping (concern: ~2,153 premotor INs by `Primary Cell Type` may be
+  over-fragmented, splitting one real functional circuit into many
+  individually-too-weak pieces). Clustered by connectivity pattern instead
+  — input-profile (which DN groups drive this IN, 475 dims) and
+  output-profile (which muscles this IN drives, 18 dims), properly
+  fraction-normalised (unlike the pilot's raw-synapse-count version).
+  Went through several rounds of real-data-driven fixes — display
+  truncation, cluster naming, a `dominance_ratio` diagnostic, then PCA
+  dimensionality reduction for the input-profile side after real data
+  showed a genuine curse-of-dimensionality failure there (silhouette never
+  peaked, one 41%-of-all-INs "leftover" cluster). **Output-profile
+  clustering (18-dim) did work** — clean silhouette peak, muscle-synergy
+  clusters resembling the pilot's 5-module finding — but the user judged
+  the analysis as a whole not meaningful/not making sense even after the
+  fixes, and asked to remove it and rethink from scratch rather than keep
+  iterating. Script and `results/interneuron_functional_clustering/`
+  deleted 2026-08-22 (never committed to git, so no history to clean up).
+  **Do not silently re-attempt the same cosine+Ward+silhouette clustering
+  approach** without discussing a genuinely different angle first — that
+  specific method was tried thoroughly and didn't land, even where the
+  math was technically working (output-profile).
+
+- **`src/power_vs_steering_direct_vs_indirect.py`** — Step 08. A quick,
+  deliberately lean analysis (not a new metric — reuses steps 01 and 05's
+  exact direct/indirect fraction formulas) answering: do POWER muscles
+  (DLM/DVM, 5 muscles) and STEERING muscles (basalar/haltere/axillary/
+  pleurosternal, 13 muscles) rely differently on direct vs. indirect
+  (via premotor IN) DN drive? The power/steering split is already in
+  `motor_pools.csv`'s `muscle_type` column — no new classification needed.
+  - Core metric: `direct_share = direct_total_fraction / (direct_total_fraction
+    + indirect_total_fraction)` per muscle, in [0, 1] by construction (1.0 =
+    fully direct, 0.0 = fully indirect) — sidesteps indirect_total_fraction's
+    lack of an absolute bound (see step 05) by only ever comparing the two
+    against each other, never treating either as a standalone probability.
+  - Power vs steering compared by `direct_share`'s mean/median across their
+    5 vs 13 muscles — no formal statistical test, sample sizes are small
+    enough to just look at the individual muscle values directly (the
+    figure shows every one, not just the aggregate).
+  - `--selftest` uses an extreme, unambiguous toy case (one power muscle
+    driven ENTIRELY directly, one steering muscle driven ENTIRELY via one
+    premotor IN) to verify the aggregation logic — not a claim about which
+    way the real data will go.
+  - **Not yet run against real BANC data** — written 2026-08-22, same
+    unverified-until-run status as the other recent steps.
+
 ---
 
 ## 6. Open decisions — flag these, don't assume
@@ -307,6 +417,15 @@ codex) export, not the neurons file's format.
   the connections file's own `neuropil` column, and is the metric to use for this
   goal rather than step 02. Cell-type matching across datasets is still a real
   sub-project, not a given.
+- **Whether/how to address premotor-IN fragmentation in steps 05/06 — open
+  again.** The concern is real: ~2,153 premotor INs grouped by
+  `Primary Cell Type` may split one functional circuit into many
+  individually-too-weak groups. A connectivity-based clustering attempt to
+  fix this (cosine similarity + Ward + silhouette, see §5's removed-step
+  note above) was tried and removed — didn't produce meaningful results
+  even after several rounds of real-data-driven fixes, despite the
+  output-profile half technically working. Needs a genuinely different
+  angle, not a retry of the same method — brainstorm before writing code.
 
 ---
 
@@ -328,3 +447,20 @@ codex) export, not the neurons file's format.
 - When comparing results to Cheong et al., cite the current version of that paper
   (it has multiple preprint/eLife versions with a changed title); numbers in the
   version-1 PDF may have been revised.
+- **Figure style, standardized 2026-08-22** across every script (01, 02, 02b,
+  03, 04, 05, 06, 08) using the `dataviz` skill's method rather than
+  hand-picked colors: a validated categorical palette (fixed hue order —
+  blue/orange/aqua/... — never cycled or reassigned), a single-hue blue
+  sequential ramp for heatmaps (replacing `magma_r`, which is multi-hue and
+  the skill flags as a rainbow-adjacent anti-pattern), no border drawn
+  around bars/cells to separate them (spacing does that job instead — the
+  skill's #1 marks anti-pattern was exactly this), and muted hairline
+  chrome (gridlines/spines/ticks in `#e1e0d9`/`#c3c2b7`, text in ink tokens)
+  instead of default matplotlib black. Color assignment follows the "what
+  job does this color do" rule: direct/indirect always reads blue/orange
+  wherever both appear (steps 06 and 08), muscle_type and pathway_type get
+  their own fixed-order categorical slots. The palette constants are
+  duplicated per-file (same standalone-script convention as everything
+  else here, not a shared import) — if you add a new figure, copy the same
+  `CAT_*` / `INK*` / `SEQUENTIAL_BLUE_STEPS` block rather than picking new
+  hex values.

@@ -1,0 +1,24 @@
+Direct vs. indirect DN->MN pathways — run summary
+============================================================
+threshold                    : 0.01
+DN groups / muscles / IN groups : 544 / 18 / 585
+substantial edges (either side) : 47
+pathway_type
+direct_only      29
+indirect_only    10
+both              8
+
+Of 37 substantial direct edges, 8 also have substantial indirect reinforcement to the same muscle.
+
+DN-group strategy rollup (top 10 by muscle count):
+dn_group  n_muscles_direct_only  n_muscles_indirect_only  n_muscles_both  n_muscles_total     overall_strategy
+   DNp31                      5                        0               1                6 mixed_across_muscles
+   DNg02                      1                        2               3                6 mixed_across_muscles
+   DNg27                      0                        5               0                5        indirect_only
+ DNxn124                      0                        3               1                4 mixed_across_muscles
+ DNxn125                      3                        0               0                3          direct_only
+   DNg05                      2                        0               0                2          direct_only
+ DNut040                      2                        0               0                2          direct_only
+   DNa04                      2                        0               0                2          direct_only
+   DNg04                      2                        0               0                2          direct_only
+   DNb07                      0                        0               2                2 both_on_every_muscle

@@ -167,6 +167,34 @@ SUBSET_TRAP_WARN_LEVEL = 0.50   # summed DN fraction above this => likely subset
 # (13.33 x 7.5in) so it always drops cleanly onto a widescreen slide.
 TOP_N_ROWS = 25
 
+# DN groups to call out in the figure, by name (must match the `dn_group`
+# values this script produces — i.e. a `Primary Cell Type` string, or
+# `untyped_<RootID>` for an untyped singleton). Leave empty for no
+# highlighting. A highlighted group is FORCED into the heatmap even if it
+# wouldn't otherwise make the TOP_N_ROWS cut, and is drawn with a bold,
+# colored row label and an outlined border around its row. A name that
+# doesn't match any DN group in the data (typo, or a group with zero direct
+# wing-muscle input) is skipped with a printed warning, not an error.
+# Example: HIGHLIGHT_DN_GROUPS = ["DNp31", "DNa08", "DNge015"]
+HIGHLIGHT_DN_GROUPS = ["DNp31", "DNp26", "DNa15"]
+
+# --- Figure style: validated palette (dataviz skill's references/palette.md) ---
+# Categorical hues in FIXED order (never cycled/reassigned) — slot 1 (blue)
+# used first, etc. Chrome tokens keep gridlines/axes hairline and recessive
+# rather than default matplotlib black. No color here is hand-picked; every
+# hex is from the documented, CVD-validated instance.
+CAT_BLUE, CAT_ORANGE, CAT_AQUA, CAT_YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
+CAT_MAGENTA, CAT_GREEN, CAT_VIOLET, CAT_RED = "#e87ba4", "#008300", "#4a3aa7", "#e34948"
+INK, INK_SOFT, INK_MUTED = "#0b0b0b", "#52514e", "#898781"
+GRID_HAIRLINE, AXIS_LINE = "#e1e0d9", "#c3c2b7"
+# Sequential ramp for heatmaps — ONE hue (blue), light->dark, per the
+# "sequential = one hue" rule (magma_r spans purple->orange->yellow, which
+# is a rainbow-adjacent multi-hue ramp the skill flags as an anti-pattern).
+SEQUENTIAL_BLUE_STEPS = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5",
+                         "#256abf", "#184f95", "#0d366b"]
+
+HIGHLIGHT_COLOR = CAT_GREEN   # distinct from the sequential blue heatmap ramp
+
 
 # =============================================================================
 # CORE COMPUTATION
@@ -298,6 +326,10 @@ def make_figure(long_df: pd.DataFrame,
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.gridspec import GridSpec
+    from matplotlib.patches import Rectangle
+    from matplotlib.colors import LinearSegmentedColormap
+
+    seq_blue = LinearSegmentedColormap.from_list("seq_blue", SEQUENTIAL_BLUE_STEPS)
 
     # Build DN-group x muscle matrix, keeping only DN groups that reach THRESHOLD
     # somewhere (otherwise the heatmap is mostly empty rows), then cap to the
@@ -313,6 +345,25 @@ def make_figure(long_df: pd.DataFrame,
     if truncated:
         mat_shown = mat_shown.iloc[:TOP_N_ROWS]
 
+    # --- Force-include any HIGHLIGHT_DN_GROUPS that got cut, or that never
+    # reached THRESHOLD in the first place — highlighting is for inspecting
+    # a specific DN's story, not just the ones that already made the cut. ---
+    highlight_set = set()
+    n_forced = 0
+    for name in HIGHLIGHT_DN_GROUPS:
+        if name not in mat.index:
+            print(f"    [warn] HIGHLIGHT_DN_GROUPS: '{name}' is not a DN group with any "
+                  f"direct wing-muscle input in this data — skipped.")
+            continue
+        highlight_set.add(name)
+        if name not in mat_shown.index:
+            mat_shown = pd.concat([mat_shown, mat.loc[[name]]])
+            n_forced += 1
+    if highlight_set:
+        # Re-sort so forced-in rows land in their natural strength order
+        # rather than just being appended at the bottom.
+        mat_shown = mat_shown.loc[mat_shown.max(axis=1).sort_values(ascending=False).index]
+
     fig = plt.figure(figsize=(13.33, 7.5), dpi=150)
     gs = GridSpec(2, 2, width_ratios=[3.2, 1.0], height_ratios=[1.0, 5.2],
                   hspace=0.5, wspace=0.30, top=0.90, bottom=0.09,
@@ -326,11 +377,11 @@ def make_figure(long_df: pd.DataFrame,
         r"\dfrac{\sum_{d\in G_{DN}}\sum_{m\in G_{MN}} w(d\rightarrow m)}"
         r"{\sum_{m\in G_{MN}} \mathrm{TotalInput}(m)}$"
     )
-    ax_formula.text(0.02, 0.55, formula, fontsize=14, va="center")
+    ax_formula.text(0.02, 0.55, formula, fontsize=14, va="center", color=INK)
     ax_formula.text(0.50, 0.55,
                     "numerator: all synapses DN type $\\rightarrow$ muscle\n"
                     "denominator: muscle's TOTAL input (whole connectome)",
-                    fontsize=9, va="center", color="#444444")
+                    fontsize=9, va="center", color=INK_SOFT)
     if demo:
         ax_formula.text(0.99, 0.95, "DEMO / SELF-TEST DATA — not real results",
                         fontsize=9, color="#B00020", fontweight="bold",
@@ -343,34 +394,57 @@ def make_figure(long_df: pd.DataFrame,
                 ha="center", va="center")
         ax.axis("off")
     else:
-        im = ax.imshow(mat_shown.values, aspect="auto", cmap="magma_r",
+        im = ax.imshow(mat_shown.values, aspect="auto", cmap=seq_blue,
                        vmin=0.0, vmax=max(mat_shown.values.max(), THRESHOLD))
         ax.set_xticks(range(mat_shown.shape[1]))
-        ax.set_xticklabels(mat_shown.columns, rotation=90, fontsize=8)
+        ax.set_xticklabels(mat_shown.columns, rotation=90, fontsize=8, color=INK_SOFT)
         ax.set_yticks(range(mat_shown.shape[0]))
-        ax.set_yticklabels(mat_shown.index, fontsize=7)
-        ax.set_xlabel("Wing motor-neuron group (muscle)", fontsize=9, fontweight="bold")
+        ax.set_yticklabels(mat_shown.index, fontsize=7, color=INK_SOFT)
+        ax.tick_params(colors=AXIS_LINE)
+        for spine in ax.spines.values():
+            spine.set_color(AXIS_LINE)
+        ax.set_xlabel("Wing motor-neuron group (muscle)", fontsize=9, fontweight="bold", color=INK)
         if truncated:
-            ylabel = (f"DN group  (top {len(mat_shown)} of {n_above_threshold} "
-                      f"with max $F_{{\\mathrm{{in}}}}$ $\\geq$ {THRESHOLD:g})")
+            ylabel = (f"DN group  (top {len(mat_shown) - n_forced} of {n_above_threshold} "
+                      f"with max $F_{{\\mathrm{{in}}}}$ $\\geq$ {THRESHOLD:g}"
+                      + (f" + {n_forced} highlighted" if n_forced else "") + ")")
         else:
             ylabel = f"DN group  (max $F_{{\\mathrm{{in}}}}$ across muscles $\\geq$ {THRESHOLD:g})"
-        ax.set_ylabel(ylabel, fontsize=9, fontweight="bold")
+        ax.set_ylabel(ylabel, fontsize=9, fontweight="bold", color=INK)
         cbar = fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
-        cbar.set_label("input fraction $F_{\\mathrm{in}}$", fontsize=8)
+        cbar.set_label("input fraction $F_{\\mathrm{in}}$", fontsize=8, color=INK)
+        cbar.ax.tick_params(colors=AXIS_LINE, labelcolor=INK_SOFT)
+        cbar.outline.set_edgecolor(AXIS_LINE)
+
+        # --- Highlighting: bold/colored row label + outlined row border ----
+        if highlight_set:
+            for i, dn_name in enumerate(mat_shown.index):
+                if dn_name in highlight_set:
+                    ax.get_yticklabels()[i].set_color(HIGHLIGHT_COLOR)
+                    ax.get_yticklabels()[i].set_fontweight("bold")
+                    ax.add_patch(Rectangle(
+                        (-0.5, i - 0.5), mat_shown.shape[1], 1.0,
+                        fill=False, edgecolor=HIGHLIGHT_COLOR, linewidth=2.0,
+                        zorder=5, clip_on=False))
 
     # --- Sanity-check bar (bottom-right) : total DN fraction per muscle ------
+    # No border on the bars — separation comes from the surface gap matplotlib
+    # already leaves between bars (default width=0.8), not an added stroke.
     axb = fig.add_subplot(gs[1, 1])
     pm = per_muscle.sort_values("total_dn_input_fraction")
-    axb.barh(range(len(pm)), pm["total_dn_input_fraction"].values,
-             color="#3B6EA5", edgecolor="black", linewidth=0.4)
+    axb.barh(range(len(pm)), pm["total_dn_input_fraction"].values, color=CAT_BLUE)
     axb.set_yticks(range(len(pm)))
-    axb.set_yticklabels(pm.index, fontsize=6)
-    axb.set_xlabel("total DN input\nfraction (all DNs)", fontsize=8, fontweight="bold")
-    axb.set_title("sanity check", fontsize=9)
+    axb.set_yticklabels(pm.index, fontsize=6, color=INK_SOFT)
+    axb.tick_params(colors=AXIS_LINE)
+    for spine in ["top", "right"]:
+        axb.spines[spine].set_visible(False)
+    for spine in ["left", "bottom"]:
+        axb.spines[spine].set_color(AXIS_LINE)
+    axb.set_xlabel("total DN input\nfraction (all DNs)", fontsize=8, fontweight="bold", color=INK)
+    axb.set_title("sanity check", fontsize=9, color=INK)
 
     fig.suptitle("Direct descending $\\rightarrow$ wing motor connectivity  ·  "
-                 "groupwise input fraction", fontsize=13, fontweight="bold", y=0.985)
+                 "groupwise input fraction", fontsize=13, fontweight="bold", y=0.985, color=INK)
     # bbox_inches="tight" only trims excess whitespace — it can shrink the
     # saved image below figsize but never grow it, so the 16:9 target still
     # holds as an upper bound even if a label needs a touch more room.

@@ -121,6 +121,12 @@ KEEP_UNTYPED_DNS = True
 # one-line change if you want top 3 or top 10 instead.
 TOP_N = 5
 
+# --- Figure style: validated palette (dataviz skill's references/palette.md) ---
+CAT_BLUE, CAT_ORANGE, CAT_AQUA, CAT_YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
+CAT_MAGENTA, CAT_GREEN, CAT_VIOLET, CAT_RED = "#e87ba4", "#008300", "#4a3aa7", "#e34948"
+INK, INK_SOFT, INK_MUTED = "#0b0b0b", "#52514e", "#898781"
+GRID_HAIRLINE, AXIS_LINE = "#e1e0d9", "#c3c2b7"
+
 
 # =============================================================================
 # CORE COMPUTATION  — identical to step 01 (see that script for full
@@ -251,17 +257,26 @@ def make_figure(top_df: pd.DataFrame, all_muscles: pd.Index, out_path: Path,
         ax = axes[r, c]
         sub = top_df[top_df["muscle"] == muscle].sort_values("rank")
         if len(sub) == 0:
-            ax.text(0.5, 0.5, "no direct\nDN input", ha="center", va="center", fontsize=7)
+            ax.text(0.5, 0.5, "no direct\nDN input", ha="center", va="center",
+                    fontsize=7, color=INK_MUTED)
             ax.set_xticks([]); ax.set_yticks([])
+            for spine in ax.spines.values():
+                spine.set_visible(False)
         else:
             sub = sub.iloc[::-1]  # strongest at top of the horizontal bar chart
-            ax.barh(range(len(sub)), sub["input_fraction"].values,
-                    color="#3B6EA5", edgecolor="black", linewidth=0.3)
+            # No border on the bars — spacing (matplotlib's default bar
+            # width < 1) separates them, not a stroke.
+            ax.barh(range(len(sub)), sub["input_fraction"].values, color=CAT_BLUE)
             ax.set_yticks(range(len(sub)))
-            ax.set_yticklabels(sub["dn_group"].values, fontsize=5.5)
-            ax.tick_params(axis="x", labelsize=5.5)
+            ax.set_yticklabels(sub["dn_group"].values, fontsize=5.5, color=INK_SOFT)
+            ax.tick_params(axis="x", labelsize=5.5, colors=AXIS_LINE)
+            ax.tick_params(axis="y", colors=AXIS_LINE)
             ax.set_xlim(0, max(sub["input_fraction"].max() * 1.15, 0.001))
-        ax.set_title(str(muscle), fontsize=8, fontweight="bold")
+            for spine in ["top", "right"]:
+                ax.spines[spine].set_visible(False)
+            for spine in ["left", "bottom"]:
+                ax.spines[spine].set_color(AXIS_LINE)
+        ax.set_title(str(muscle), fontsize=8, fontweight="bold", color=INK)
 
     # Blank out any unused grid cells (n_muscles may not fill nrows*ncols exactly).
     for i in range(n_muscles, nrows * ncols):
@@ -273,10 +288,10 @@ def make_figure(top_df: pd.DataFrame, all_muscles: pd.Index, out_path: Path,
                  fontsize=9, color="#B00020", fontweight="bold", va="top", ha="right")
 
     fig.suptitle(f"Top {n} DN groups by direct input fraction, per wing muscle",
-                 fontsize=13, fontweight="bold", y=1.0)
+                 fontsize=13, fontweight="bold", y=1.0, color=INK)
     fig.text(0.5, 0.95,
              "bars = groupwise input fraction $F_{\\mathrm{in}}$ (step 01) — "
-             "NOT raw synapse count", fontsize=8, color="#444444", ha="center")
+             "NOT raw synapse count", fontsize=8, color=INK_SOFT, ha="center")
     fig.tight_layout(rect=[0, 0, 1, 0.92])
     fig.savefig(out_path, facecolor="white")
     plt.close(fig)

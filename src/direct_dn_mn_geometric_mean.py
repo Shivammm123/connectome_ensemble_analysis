@@ -167,6 +167,14 @@ TOP_N_ROWS = 25
 # ranked-pathway panel.
 TOP_N_PATHWAYS_SHOWN = 20
 
+# --- Figure style: validated palette (dataviz skill's references/palette.md) ---
+CAT_BLUE, CAT_ORANGE, CAT_AQUA, CAT_YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
+CAT_MAGENTA, CAT_GREEN, CAT_VIOLET, CAT_RED = "#e87ba4", "#008300", "#4a3aa7", "#e34948"
+INK, INK_SOFT, INK_MUTED = "#0b0b0b", "#52514e", "#898781"
+GRID_HAIRLINE, AXIS_LINE = "#e1e0d9", "#c3c2b7"
+SEQUENTIAL_BLUE_STEPS = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5",
+                         "#256abf", "#184f95", "#0d366b"]
+
 
 # =============================================================================
 # CORE COMPUTATION
@@ -290,6 +298,9 @@ def make_figure(long_df: pd.DataFrame, out_path: Path, demo: bool = False) -> No
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.gridspec import GridSpec
+    from matplotlib.colors import LinearSegmentedColormap
+
+    seq_blue = LinearSegmentedColormap.from_list("seq_blue", SEQUENTIAL_BLUE_STEPS)
 
     mat = long_df.pivot_table(index="dn_group", columns="muscle",
                               values="geometric_mean_fraction", aggfunc="sum", fill_value=0.0)
@@ -314,12 +325,12 @@ def make_figure(long_df: pd.DataFrame, out_path: Path, demo: bool = False) -> No
         r"\sqrt{\,F_{\mathrm{in}}(G_{DN}\!\rightarrow\!G_{MN}) "
         r"\cdot F_{\mathrm{out,VNC}}(G_{DN}\!\rightarrow\!G_{MN})\,}$"
     )
-    ax_formula.text(0.02, 0.55, formula, fontsize=14, va="center")
+    ax_formula.text(0.02, 0.55, formula, fontsize=14, va="center", color=INK)
     ax_formula.text(0.50, 0.55,
                     "$F_{\\mathrm{in}}$: share of muscle's input from this DN type (step 01)\n"
                     "$F_{\\mathrm{out,VNC}}$: share of DN type's VNC output to this muscle (step 02b)\n"
                     "high only when the edge is strong from BOTH sides",
-                    fontsize=9, va="center", color="#444444")
+                    fontsize=9, va="center", color=INK_SOFT)
     if demo:
         ax_formula.text(0.99, 0.95, "DEMO / SELF-TEST DATA — not real results",
                         fontsize=9, color="#B00020", fontweight="bold",
@@ -332,21 +343,26 @@ def make_figure(long_df: pd.DataFrame, out_path: Path, demo: bool = False) -> No
                 ha="center", va="center")
         ax.axis("off")
     else:
-        im = ax.imshow(mat_shown.values, aspect="auto", cmap="magma_r",
+        im = ax.imshow(mat_shown.values, aspect="auto", cmap=seq_blue,
                        vmin=0.0, vmax=max(mat_shown.values.max(), THRESHOLD))
         ax.set_xticks(range(mat_shown.shape[1]))
-        ax.set_xticklabels(mat_shown.columns, rotation=90, fontsize=8)
+        ax.set_xticklabels(mat_shown.columns, rotation=90, fontsize=8, color=INK_SOFT)
         ax.set_yticks(range(mat_shown.shape[0]))
-        ax.set_yticklabels(mat_shown.index, fontsize=7)
-        ax.set_xlabel("Wing motor-neuron group (muscle)", fontsize=9, fontweight="bold")
+        ax.set_yticklabels(mat_shown.index, fontsize=7, color=INK_SOFT)
+        ax.tick_params(colors=AXIS_LINE)
+        for spine in ax.spines.values():
+            spine.set_color(AXIS_LINE)
+        ax.set_xlabel("Wing motor-neuron group (muscle)", fontsize=9, fontweight="bold", color=INK)
         if truncated:
             ylabel = (f"DN group  (top {len(mat_shown)} of {n_above_threshold} with max "
                       f"$F_{{\\mathrm{{geom}}}}$ $\\geq$ {THRESHOLD:g})")
         else:
             ylabel = f"DN group  (max $F_{{\\mathrm{{geom}}}}$ across muscles $\\geq$ {THRESHOLD:g})"
-        ax.set_ylabel(ylabel, fontsize=9, fontweight="bold")
+        ax.set_ylabel(ylabel, fontsize=9, fontweight="bold", color=INK)
         cbar = fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
-        cbar.set_label("geometric mean $F_{\\mathrm{geom}}$", fontsize=8)
+        cbar.set_label("geometric mean $F_{\\mathrm{geom}}$", fontsize=8, color=INK)
+        cbar.ax.tick_params(colors=AXIS_LINE, labelcolor=INK_SOFT)
+        cbar.outline.set_edgecolor(AXIS_LINE)
 
     # --- Top pathways (bottom-right) : ranked edge list, the actual point --
     # of this metric (Cheong used it for pathway exploration, not group
@@ -356,16 +372,20 @@ def make_figure(long_df: pd.DataFrame, out_path: Path, demo: bool = False) -> No
     top_edges = long_df.sort_values("geometric_mean_fraction", ascending=False) \
         .head(TOP_N_PATHWAYS_SHOWN).iloc[::-1]  # reverse so strongest is at top of barh
     labels = [f"{r.dn_group}$\\rightarrow${r.muscle}" for r in top_edges.itertuples()]
-    axb.barh(range(len(top_edges)), top_edges["geometric_mean_fraction"].values,
-             color="#3B6EA5", edgecolor="black", linewidth=0.4)
+    axb.barh(range(len(top_edges)), top_edges["geometric_mean_fraction"].values, color=CAT_BLUE)
     axb.set_yticks(range(len(top_edges)))
-    axb.set_yticklabels(labels, fontsize=6)
-    axb.set_xlabel("$F_{\\mathrm{geom}}$", fontsize=8, fontweight="bold")
-    axb.set_title(f"top {len(top_edges)} pathways", fontsize=9)
+    axb.set_yticklabels(labels, fontsize=6, color=INK_SOFT)
+    axb.tick_params(colors=AXIS_LINE)
+    for spine in ["top", "right"]:
+        axb.spines[spine].set_visible(False)
+    for spine in ["left", "bottom"]:
+        axb.spines[spine].set_color(AXIS_LINE)
+    axb.set_xlabel("$F_{\\mathrm{geom}}$", fontsize=8, fontweight="bold", color=INK)
+    axb.set_title(f"top {len(top_edges)} pathways", fontsize=9, color=INK)
 
     fig.suptitle("Direct descending $\\rightarrow$ wing motor connectivity  ·  "
                  "geometric mean of input \\& VNC output fraction",
-                 fontsize=12.5, fontweight="bold", y=0.985)
+                 fontsize=12.5, fontweight="bold", y=0.985, color=INK)
     fig.savefig(out_path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
